@@ -1,4 +1,4 @@
-# Unified Monitoring Automation
+# Centralized Monitoring
 
 > KakaoCloud에 배포된 **1,000개 이상의 VM**에 대해 메트릭 수집, 알림 규칙 평가, KakaoWork 알림 전송을 완전 자동화한 통합 모니터링 시스템.  
 > 모든 설정과 배포는 단일 Ansible 서버에서 Python 스크립트로 관리. 프로덕션 서버를 직접 편집하지 않음.
@@ -12,8 +12,6 @@
 | **모니터링 대상** | KakaoCloud VM 1,000개+ (Ubuntu / Rocky Linux) |
 | **알림 채널** | KakaoWork 봇 웹훅 |
 | **핵심 스택** | Prometheus · Alertmanager · Blackbox Exporter · Node Exporter · FastAPI |
-| **관련 프로젝트** | [Puppet 드리프트 감지](../puppet-portfolio) · [Ansible 자동화](../ansible-portfolio) |
-
 ---
 
 ## Architecture
