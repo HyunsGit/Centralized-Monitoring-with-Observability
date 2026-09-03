@@ -64,10 +64,15 @@ monitoring-automation/
 │   └── tobe-automate-prometheus-scrape-config.py  # scrape target 자동화 + 알림 규칙 배포
 ├── alertmanager/
 │   └── tobe-automate-alertmanager-with-webhook.py # Alertmanager + kakao-webhook 배포
+├── dashboards/
+│   ├── kr2-healthcheck.json                       # VM SSH/ICMP 연결성 대시보드
+│   └── ist-health-check.json                      # FW/WAF/Querypie/메일 보안장비 대시보드
 ├── tools/
 │   └── stress_runner.py                           # 원격 부하 테스트 오케스트레이터
 ├── docs/
 │   ├── architecture_diagram.png                   # 아키텍처 다이어그램
+│   ├── kr2_healthcheck.png                        # VM SSH/ICMP 대시보드 스크린샷
+│   ├── fw_waf_healthcheck.png                     # 보안장비 대시보드 스크린샷
 │   ├── alerting.png                               # KakaoWork 발생 알림 예시
 │   └── resolved.png                               # KakaoWork 해소 알림 예시
 └── README.md
@@ -245,6 +250,69 @@ sudo python3 stress_runner.py --host <vm-hostname> --cpu-percent 100 --mem-perce
 ```bash
 curl -X POST 'http://alertmanager-01.internal.example.com:5001/stats/reset'
 curl -X POST 'http://alertmanager-02.internal.example.com:5001/stats/reset'
+```
+
+---
+
+## Grafana Dashboards
+
+모니터링 시스템의 시각화 레이어. 두 가지 대시보드로 VM 연결성과 보안 장비 상태를 통합 관리.
+
+### 1. VM SSH/ICMP Health Check (`dashboards/kr2-healthcheck.json`)
+
+![KR2 Healthcheck Dashboard](docs/kr2_healthcheck.png)
+
+1,000개+ VM의 SSH/ICMP 연결 상태를 실시간으로 시각화하고 알림 통계를 통합 표시.
+
+| 섹션 | 내용 |
+|---|---|
+| **On Init Graphic** | JS pulse 애니메이션 — SSH Unhealthy > 12대 또는 ICMP Unhealthy > 8대 시 패널 테두리가 빨간색으로 pulse |
+| **Domain Summary** | SSH/ICMP Healthy·Unhealthy 카운트 + 전체 VM 상태 테이블 (project·s-code·hostname·IP·상태) |
+| **Project Summary** | 프로젝트별 SSH/ICMP 상세 현황 |
+| **Alert Summary** | Total Fired/Resolved/Active · 카테고리별 Bar chart · 현재 활성 알림 · Top Hosts · 평균 지속시간 |
+
+**기술적 포인트:**
+- `gapit-htmlgraphics-panel` — `window.parent`로 Grafana DOM에 직접 CSS 주입해 실시간 상태 시각화
+- Dual Datasource — Prometheus(메트릭) + Infinity Plugin(kakao-webhook `/stats/*` REST API 직접 호출)
+- 5초 Grafana 자동 새로고침 + 3초 JS polling 이중 구조
+
+```promql
+# SSH Unhealthy 카운트
+count(probe_success{job="blackbox_ssh", vm_state="active"} == 0)
+
+# 전체 VM SSH/ICMP 상태 테이블
+probe_success{job="blackbox_ssh", domain=~"$domain", vm_state="active"}
+```
+
+---
+
+### 2. Security Infrastructure Health Check (`dashboards/ist-health-check.json`)
+
+![FW/WAF Health Check Dashboard](docs/fw_waf_healthcheck.png)
+
+Fortigate 방화벽(SNMP), WAF, Querypie(DB 접근제어), 메일 보안 장비를 단일 대시보드로 통합 모니터링.
+
+| 섹션 | 모니터링 대상 | 메트릭 소스 |
+|---|---|---|
+| **FW Status** | Fortigate 3대 (INFRA-FW / DMZ-FW / HDC-FW) | SNMP Exporter (`fg_cpu_usage`, `fg_memory_usage`, `fgSysDiskUsage`) |
+| **WAF Status** | WAF 4대 | Node Exporter (`node_cpu_seconds_total`, `node_memory_*`, `node_filesystem_*`) |
+| **Querypie Status** | Querypie 2대 (DB 접근제어) | Node Exporter |
+| **Mail Status** | SpamOut 2대 + SpamSniper 2대 | Node Exporter |
+
+**기술적 포인트:**
+- Fortigate는 SNMP Exporter 전용 메트릭(`fg_*`) 사용 — VM과 다른 수집 경로
+- `label_replace()`로 IP → 장비 alias 변환 (가독성 향상)
+- 5초 자동 새로고침, 전 장비 UP/Down 🟢🔴 상태를 최상단에 한눈에 표시
+
+```promql
+# Fortigate CPU (SNMP Exporter)
+fg_cpu_usage{instance=~"<INFRA_FW_IP>|<DMZ_FW_IP>|<HDC_FW_IP>"}
+
+# IP → Alias 변환
+label_replace(..., "alias", "INFRA-FW", "instance", "<INFRA_FW_IP>")
+
+# WAF CPU (Node Exporter)
+100 - (avg by (hostname)(rate(node_cpu_seconds_total{mode="idle", hostname="waf-01..."}[5m])) * 100)
 ```
 
 ---
