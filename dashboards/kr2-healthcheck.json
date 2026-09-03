@@ -1,0 +1,46 @@
+{
+  "title": "KR2 VM SSH/ICMP Health Check",
+  "description": "Real-time SSH and ICMP connectivity monitoring for 1,000+ VMs with alert statistics",
+  "note": "Internal hostnames, datasource UIDs, and alertmanager URLs have been sanitized. Replace placeholders before use.",
+  "placeholders": {
+    "<DATASOURCE_UID>": "Prometheus datasource UID in Grafana",
+    "alertmanager-01.internal.example.com": "Alertmanager primary host",
+    "alertmanager-02.internal.example.com": "Alertmanager secondary host"
+  },
+  "panels": [
+    "On Init Graphic: JS pulse animation — panel border turns red if SSH unhealthy > 12 or ICMP unhealthy > 8",
+    "Domain Summary: SSH Healthcheck stat, ICMP Healthcheck stat, SSH/ICMP Status Summary table",
+    "Project Summary: Per-project SSH/ICMP healthy/unhealthy counts + detail tables",
+    "Alert Summary: Total Fired/Resolved/Active, Alert by Category bar chart, Currently Active Alerts table, Top Hosts by Alert Count, Alert Statistics by Category"
+  ],
+  "datasources": [
+    "Prometheus — probe_success metrics (Blackbox Exporter)",
+    "Infinity — REST API calls to kakao-webhook /stats/* endpoints"
+  ],
+  "refresh": "5s",
+  "variables": [
+    "domain",
+    "project",
+    "s-code",
+    "phase",
+    "vm_state",
+    "hostname"
+  ],
+  "promql_examples": {
+    "SSH_Healthy": "count(probe_success{job=\"blackbox_ssh\", vm_state=\"active\"} == 1)",
+    "SSH_Unhealthy": "count(probe_success{job=\"blackbox_ssh\", vm_state=\"active\"} == 0)",
+    "ICMP_Healthy": "count(probe_success{job=\"blackbox_icmp\", vm_state=\"active\"} == 1)",
+    "SSH_ICMP_Table": "probe_success{job=~\"blackbox_ssh\", domain=~\"$domain\", vm_state=\"active\"}"
+  },
+  "special_features": {
+    "JS_DOM_manipulation": "gapit-htmlgraphics-panel injects CSS animations into parent Grafana window via window.parent",
+    "pulse_animation": "Panel border pulses red when unhealthy count exceeds threshold (SSH>12, ICMP>8)",
+    "dual_datasource": "Prometheus for metrics + Infinity plugin for REST API (alertmanager webhook stats)",
+    "alert_stats_api": [
+      "GET /stats/summary       — total fired/resolved/still_active",
+      "GET /stats/by_category   — VOL/MEM/CPU/CON breakdown",
+      "GET /stats/active        — currently firing alerts",
+      "GET /stats               — top hosts + avg duration"
+    ]
+  }
+}

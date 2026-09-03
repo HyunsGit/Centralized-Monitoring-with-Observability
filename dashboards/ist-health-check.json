@@ -1,0 +1,29 @@
+{
+  "title": "Security Infrastructure Health Check",
+  "description": "Monitoring dashboard for Fortigate Firewall (SNMP), WAF, Querypie (DB Access Control), and Mail Security appliances",
+  "note": "Internal IPs and hostnames have been sanitized for portfolio. Replace placeholders before use.",
+  "placeholders": {
+    "<INFRA_FW_IP>": "Fortigate INFRA Firewall management IP",
+    "<DMZ_FW_IP>": "Fortigate DMZ Firewall management IP",
+    "<HDC_FW_IP>": "Fortigate HDC Firewall management IP",
+    "waf-0[1-4].internal.example.com": "WAF hostname pattern",
+    "querypie-0[1-2].internal.example.com": "Querypie DB access control hostname",
+    "spamout-0[1-2].internal.example.com": "Mail spam filter (SpamOut) hostname",
+    "spamsniper-0[1-2].internal.example.com": "Mail spam filter (SpamSniper) hostname"
+  },
+  "panels": [
+    "Status (UP/Down): FW / WAF / Querypie / Spamout 🟢🔴",
+    "FW Status: CPU, Memory, Disk time-series (via SNMP Exporter fg_* metrics)",
+    "WAF Status: CPU, Memory, Disk time-series (via Node Exporter)",
+    "Querypie Status: CPU, Memory, Disk time-series",
+    "Mail Status: SpamOut + SpamSniper CPU, Memory, Disk time-series"
+  ],
+  "datasource": "Prometheus (SNMP Exporter + Node Exporter)",
+  "refresh": "5s",
+  "promql_examples": {
+    "FW_CPU": "fg_cpu_usage{instance=~\"<INFRA_FW_IP>|<DMZ_FW_IP>|<HDC_FW_IP>\"}",
+    "FW_MEM": "fg_memory_usage{instance=~\"<INFRA_FW_IP>|...\",job=\"fortigate_snmp\"}",
+    "WAF_CPU": "100 - (avg by (hostname)(rate(node_cpu_seconds_total{mode=\"idle\", hostname=\"waf-01.internal.example.com\"}[5m])) * 100)",
+    "WAF_MEM": "(1 - avg by (hostname)(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100"
+  }
+}
