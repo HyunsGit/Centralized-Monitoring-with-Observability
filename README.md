@@ -1,5 +1,29 @@
 # Centralized Monitoring
 
+Table of Contents
+=================
+
+* [Centralized Monitoring](#centralized-monitoring)
+  * [Overview](#overview)
+  * [Architecture](#architecture)
+    * [서버 구성](#서버-구성)
+    * [전체 데이터 흐름](#전체-데이터-흐름)
+  * [Repository Structure](#repository-structure)
+  * [Scripts](#scripts)
+    * [1\. prometheus/tobe\-automate\-prometheus\-scrape\-config\.py](#1-prometheustobe-automate-prometheus-scrape-configpy)
+    * [2\. alertmanager/tobe\-automate\-alertmanager\-with\-webhook\.py](#2-alertmanagertobe-automate-alertmanager-with-webhookpy)
+    * [3\. tools/stress\_runner\.py](#3-toolsstress_runnerpy)
+  * [Deployment](#deployment)
+    * [배포 순서 (최초)](#배포-순서-최초)
+    * [부분 배포 (변경 시)](#부분-배포-변경-시)
+    * [알림 재전송 Interval](#알림-재전송-interval)
+    * [알림 통계 초기화](#알림-통계-초기화)
+  * [Grafana Dashboards](#grafana-dashboards)
+    * [1\. VM SSH/ICMP Health Check (dashboards/kr2\-healthcheck\.json)](#1-vm-sshicmp-health-check-dashboardskr2-healthcheckjson)
+    * [2\. Security Infrastructure Health Check (dashboards/ist\-health\-check\.json)](#2-security-infrastructure-health-check-dashboardsist-health-checkjson)
+  * [Credentials](#credentials)
+  * [Tech Stack](#tech-stack)
+
 > KakaoCloud에 배포된 **1,000개 이상의 VM**에 대해 메트릭 수집, 알림 규칙 평가, KakaoWork 알림 전송을 완전 자동화한 통합 모니터링 시스템.  
 > 모든 설정과 배포는 단일 Ansible 서버에서 Python 스크립트로 관리. 프로덕션 서버를 직접 편집하지 않음.
 
